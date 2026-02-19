@@ -20,7 +20,10 @@ private:
 
 	// Default variables for level class.
 	TileMap m_tileMap;
+	TileMap m_flag;
+	TileMap m_switch;
 
+	sf::Texture m_texture;
 	Player m_player;
 
 };

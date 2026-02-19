@@ -23,6 +23,27 @@ void Player::handleInput(float dt)
 	if (m_input->isKeyDown(sf::Keyboard::Scancode::D))
 		m_acceleration.x += SPEED;
 
+	if (m_input->isKeyDown(sf::Keyboard::Scancode::Space)&&m_isOnGround)
+	{
+		m_velocity.y -= JUMP_FORCE;
+		m_isOnGround = false;
+	}
+	
+	if (m_input->isPressed(sf::Keyboard::Scancode::F))
+	{
+		sf::Vector2f flagCentre = m_flag->getPosition() + m_flag->getSize() * 0.5f;
+		sf::Vector2f switchCentre = m_switch->getPosition() + m_switch->getSize() * 0.5f;
+
+		if ((getPosition() - flagCentre).length() <= 50.0)
+		{
+			std::cout << "flag pressed\n";
+		}
+		if ((getPosition() - switchCentre).length() <= 50.0)
+		{
+			m_switch->toggle();
+		}
+	}
+
 	if (m_input->isKeyDown(sf::Keyboard::Scancode::R))	// Reset (for debugging)
 	{
 		setPosition({ 50,0 });
@@ -35,10 +56,38 @@ void Player::update(float dt)
 	// newtonian model
 	m_acceleration.y += GRAVITY;
 	m_velocity += dt * m_acceleration;
+	m_oldPosition = getPosition();
 	move(m_velocity);
 }
 
 void Player::collisionResponse(GameObject& collider)
 {
-	
+	sf::FloatRect pCol = getCollisionBox();
+	sf::FloatRect colCol = collider.getCollisionBox();
+	auto overlap = pCol.findIntersection(colCol);
+	if (!overlap) return;
+
+	// historical data
+	float oldBottom = m_oldPosition.y + pCol.size.y;
+	float tileTop = colCol.position.y;
+
+	if (oldBottom <= tileTop)
+	{
+		if (m_velocity.y > 0)
+		{
+			m_velocity.y = 0;
+			setPosition({ getPosition().x, getPosition().y - overlap->size.y });
+			m_isOnGround = true;
+		}
+	}
+
+	else
+	{
+		m_velocity.x *= -COEFF_REST; // Bounce
+		// fix with MTV
+		if (pCol.position.x < colCol.position.x)
+			setPosition({ getPosition().x - overlap->size.x, getPosition().y });
+		else
+			setPosition({ getPosition().x + overlap->size.x, getPosition().y });
+	}
 }
